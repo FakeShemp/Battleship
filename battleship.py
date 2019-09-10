@@ -1,3 +1,12 @@
+# TODO - Create phase one: place ships
+# TODO - Click on block and register it
+# TODO - Check if hit/miss
+# TODO - Check that ships aren't overlapping
+# TODO
+# TODO - Two players
+# TODO - Add text
+# TODO - Make things better looking
+
 import pygame
 
 colors = {"red": (255, 0, 0), "green": (0, 255, 0), "blue": (0, 0, 255), "black": (0, 0, 0), "white": (255, 255, 255)}
@@ -34,8 +43,61 @@ class Grid:
     def line_area(self) -> pygame.rect.Rect:
         return pygame.rect.Rect(self.screen_pos.x - self.line_width,
                                 self.screen_pos.y - self.line_width,
-                                (self.block_size + self.line_width) * self.columns + self.line_width,
-                                (self.block_size + self.line_width) * self.rows + self.line_width)
+                                self.width(),
+                                self.height())
+
+    def width(self):
+        return (self.block_size + self.line_width) * self.columns + self.line_width
+
+    def height(self):
+        return (self.block_size + self.line_width) * self.rows + self.line_width
+
+
+class Player:
+    def __init__(self, guess_grid: Grid, ship_grid: Grid):
+        self.name = None
+        self.guess_grid = guess_grid
+        self.ship_grid = ship_grid
+
+
+def place_ships(event, ships, grid_ship, dragging):
+    offset_x = 0
+    offset_y = 0
+    ship_dragging = dragging
+    if event.type == pygame.MOUSEBUTTONDOWN:
+        if event.button == 1:
+            for ship in ships:
+                if ships[ship].collidepoint(event.pos):
+                    ship_dragging = ship
+                    mouse_x, mouse_y = event.pos
+                    offset_x = ships[ship].x - mouse_x
+                    offset_y = ships[ship].y - mouse_y
+        if event.button == 3:
+            for ship in ships:
+                if ships[ship].collidepoint(event.pos):
+                    temp = ships[ship].height
+                    ships[ship].height = ships[ship].width
+                    ships[ship].width = temp
+
+    elif event.type == pygame.MOUSEBUTTONUP:
+        if event.button == 1:
+            if ship_dragging:
+                if grid_ship.line_area().colliderect(ships[ship_dragging]):
+                    ships[ship_dragging].x = (round(
+                        ships[ship_dragging].x / (grid_ship.block_size + grid_ship.line_width))) * (
+                                                     grid_ship.block_size + grid_ship.line_width)
+                    ships[ship_dragging].y = (round(
+                        ships[ship_dragging].y / (grid_ship.block_size + grid_ship.line_width))) * (
+                                                     grid_ship.block_size + grid_ship.line_width)
+                ship_dragging = False
+
+    elif event.type == pygame.MOUSEMOTION:
+        if ship_dragging:
+            mouse_x, mouse_y = event.pos
+            ships[ship_dragging].x = mouse_x + offset_x
+            ships[ship_dragging].y = mouse_y + offset_y
+
+    return ship_dragging
 
 
 def main():
@@ -44,8 +106,16 @@ def main():
 
     screen = pygame.display.set_mode((screen_height, screen_width))
 
-    grid_ship = Grid(colors.get("green"), colors.get("black"), 10, 10, round(screen_width / 30), Pos(0, 0), 1)
-    grid_enemy = Grid(colors.get("white"), colors.get("black"), 10, 10, round(screen_width / 20), Pos(300, 300), 1)
+    players = [Player(Grid(colors.get("white"), colors.get("black"), 10, 10, round(screen_width / 30), Pos(10, 10), 1),
+                      Grid(colors.get("green"), colors.get("black"), 10, 10, round(screen_width / 20), Pos(10, 320),
+                           1)),
+               Player(Grid(colors.get("white"), colors.get("black"), 10, 10, round(screen_width / 30),
+                           Pos(screen_width - 10, 10), 1),
+                      Grid(colors.get("green"), colors.get("black"), 10, 10, round(screen_width / 20),
+                           Pos(screen_width - 10, 320), 1))]
+
+    grid_ship = Grid(colors.get("white"), colors.get("black"), 10, 10, round(screen_width / 30), Pos(10, 10), 1)
+    grid_enemy = Grid(colors.get("green"), colors.get("black"), 10, 10, round(screen_width / 20), Pos(10, 320), 1)
 
     ships = [Ship(colors.get("blue"), "carrier", 5, Pos(600, 100)),
              Ship(colors.get("blue"), "battleship", 4, Pos(600, 150)),
@@ -64,44 +134,22 @@ def main():
     clock = pygame.time.Clock()
 
     running = True
+    phase = 0
 
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
-            elif event.type == pygame.MOUSEBUTTONDOWN:
-                if event.button == 1:
-                    for ship in ships:
-                        if ships[ship].collidepoint(event.pos):
-                            ship_dragging = ship
-                            mouse_x, mouse_y = event.pos
-                            offset_x = ships[ship].x - mouse_x
-                            offset_y = ships[ship].y - mouse_y
-                if event.button == 3:
-                    for ship in ships:
-                        if ships[ship].collidepoint(event.pos):
-                            temp = ships[ship].height
-                            ships[ship].height = ships[ship].width
-                            ships[ship].width = temp
-
-            elif event.type == pygame.MOUSEBUTTONUP:
-                if event.button == 1:
-                    if ship_dragging:
-                        if grid_ship.line_area().colliderect(ships[ship_dragging]):
-                            ships[ship_dragging].x = (round(
-                                ships[ship_dragging].x / (grid_ship.block_size + grid_ship.line_width))) * (
-                                                             grid_ship.block_size + grid_ship.line_width)
-                            ships[ship_dragging].y = (round(
-                                ships[ship_dragging].y / (grid_ship.block_size + grid_ship.line_width))) * (
-                                                             grid_ship.block_size + grid_ship.line_width)
-                        ship_dragging = False
-
-            elif event.type == pygame.MOUSEMOTION:
-                if ship_dragging:
-                    mouse_x, mouse_y = event.pos
-                    ships[ship_dragging].x = mouse_x + offset_x
-                    ships[ship_dragging].y = mouse_y + offset_y
+            if phase == 0:
+                # Place ships
+                ship_dragging = place_ships(event, ships, grid_ship, ship_dragging)
+            elif phase == 1:
+                # Guess place
+                None
+            else:
+                # Win/Lose
+                None
 
         screen.fill(colors.get("white"))
 

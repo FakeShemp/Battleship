@@ -143,6 +143,7 @@ class Player:
                       Ship(colors.get("blue"), "patrol_boat", 2, Pos(600, 300))]
         self.ship_positions = None
         self.guesses = []
+        self.hits = []
 
 
 class Text:
@@ -222,7 +223,7 @@ def calc_ship_positions(player: Player):
     return positions
 
 
-def guess_block(kwargs: (Player, Player, list)):
+def guess_block(kwargs):
     player, enemy, block = kwargs
     if block in player.guesses:
         return False
@@ -231,13 +232,12 @@ def guess_block(kwargs: (Player, Player, list)):
     for pos in enemy.ship_positions:
         if block["human_name"] == pos["human_name"]:
             block["color"] = colors.get("red")
-            #Player.grid_player.blocks ["color"] = colors.get("red")
+            enemy.hits.append(pos)
             change_player()
             return block
-        else:
-            block["color"] = colors.get("black")
-            change_player()
-            return True
+    block["color"] = colors.get("black")
+    change_player()
+    return True
 
 
 def change_player():
@@ -246,6 +246,15 @@ def change_player():
         current_player = 0
     else:
         current_player = 1
+
+
+def check_if_win(players: [Player]):
+    if len(players[0].hits) == 17:
+        return 2
+    elif len(players[1].hits) == 17:
+        return 1
+    else:
+        return False
 
 
 def main():
@@ -273,7 +282,7 @@ def main():
 
     running = True
     offset = Pos(0, 0)
-    game_ongoing = True
+    game_ended = False
     ship_dragging = False
     ok_button = Button(100, 30, Pos(screen_width / 2 + 100 / 2, screen_height - 30 - 10), colors.get("green"),
                        ok_button_clicked)
@@ -296,16 +305,14 @@ def main():
                                                     offset)
                 ok_button.click(event, players[1])
             elif game_phase == 2:
-                if game_ongoing:
+                if not game_ended:
                     if current_player == 0:
                         for block in players[0].grid_enemy.blocks:
                             block["button"].click(event, (players[0], players[1], block))
                     else:
                         for block in players[1].grid_enemy.blocks:
                             block["button"].click(event, (players[1], players[0], block))
-            else:
-                # Win/Lose
-                None
+                    game_ended = check_if_win(players)
 
         if game_phase == 0:
             players[0].grid_player.draw(screen)
@@ -322,23 +329,26 @@ def main():
                 ship.draw(screen, players[1].grid_player)
             p2text.draw(screen)
         elif game_phase == 2:
-            if game_ongoing:
+            if not game_ended:
                 if current_player == 0:
                     players[0].grid_player.draw(screen)
                     players[0].grid_enemy.draw(screen)
                     for ship in players[0].ships:
                         ship.draw(screen, players[0].grid_player)
+                    for hit in players[0].hits:
+                        pygame.draw.rect(screen, colors.get("red"), hit["rect"])
                     p1text.draw(screen)
                 else:
                     players[1].grid_player.draw(screen)
                     players[1].grid_enemy.draw(screen)
                     for ship in players[1].ships:
                         ship.draw(screen, players[1].grid_player)
+                        for hit in players[1].hits:
+                            pygame.draw.rect(screen, colors.get("red"), hit["rect"])
                     p2text.draw(screen)
             else:
-                game_phase = game_phase + 1
-        else:
-            None
+                game_over = Text(colors.get("black"), default_font, Pos(screen_width / 2, screen_height / 2), str("Player " + str(game_ended) + " wins!"))
+                game_over.draw()
 
         pygame.display.flip()
 

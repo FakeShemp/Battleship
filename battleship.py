@@ -3,7 +3,7 @@
 # TODO - Replace hard-coded phases with self-stated entities
 # TODO - Make a real resolution system instead of hard-coded percentages
 # TODO - Make things better-looking
-# TODO - Make the grid system matrix-based insted of collision-based
+# TODO - Make the grid system matrix-based instead of collision-based
 
 import pygame
 

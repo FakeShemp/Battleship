@@ -120,6 +120,7 @@ class Ship:
         self.type = name
         self.position = position
 
+    # Constructs a rectangle according to a grid, making sure it correctly integrates with passed-in grid.
     def rect(self, grid: Grid):
         if not self.vertical:
             return pygame.rect.Rect(self.position.x, self.position.y,

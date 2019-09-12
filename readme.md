@@ -1,10 +1,10 @@
-#Battleship
+# Battleship
 
-###Requirements
+### Requirements
 * Python 3.6+
 * pygame 1.9x (`python3 -m pip install pygame`)
 
-###Playing the game
+### Playing the game
 * Run with `python3 battleship.py`
 * The game starts with placing the ships on the grid. **Drag** the ships to where 
 you want them with the mouse. **RMB** rotates the ship. Click the green button at the 
